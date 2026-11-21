@@ -1,0 +1,136 @@
+
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Teste de vídeo e DRM - TU8000</title>
+<style>
+body {
+  font: 16px Arial;
+  background: #101820;
+  color: white;
+  padding: 20px;
+  line-height: 1.5;
+}
+pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  background: #1d2b36;
+  padding: 14px;
+  border-radius: 8px;
+}
+button {
+  padding: 12px 18px;
+  font-size: 16px;
+}
+</style>
+</head>
+<body>
+
+<h2>Diagnóstico de vídeo e DRM</h2>
+<p>Teste de compatibilidade da Samsung TU8000.</p>
+<p>Não acessa sua conta Xbox nem altera configurações.</p>
+
+<button id="run">Executar teste</button>
+<pre id="out">Aguardando...</pre>
+
+<script>
+const out = document.getElementById("out");
+const video = document.createElement("video");
+
+function canPlay(type) {
+  try {
+    return video.canPlayType(type) || "não informado";
+  } catch(e) {
+    return "erro: " + e;
+  }
+}
+
+async function testDRM(name) {
+  if (!navigator.requestMediaKeySystemAccess) {
+    return {status: "API EME ausente"};
+  }
+
+  try {
+    const access =
+      await navigator.requestMediaKeySystemAccess(name, [{
+        initDataTypes: ["cenc"],
+        distinctiveIdentifier: "optional",
+        persistentState: "optional",
+        sessionTypes: ["temporary"],
+        videoCapabilities: [{
+          contentType: 'video/mp4; codecs="avc1.42E01E"'
+        }],
+        audioCapabilities: [{
+          contentType: 'audio/mp4; codecs="mp4a.40.2"'
+        }]
+      }]);
+
+    return {
+      status: "ACESSO CONCEDIDO",
+      keySystem: access.keySystem,
+      configuracao: access.getConfiguration()
+    };
+  } catch(e) {
+    return {
+      status: "NÃO SUPORTADO OU NEGADO",
+      erro: e.name + ": " + e.message
+    };
+  }
+}
+
+document.getElementById("run").onclick = async function() {
+  out.textContent = "Executando testes...";
+
+  const types = [
+    'video/mp4; codecs="avc1.42E01E"',
+    'video/mp4; codecs="avc1.640028"',
+    'video/mp4; codecs="hvc1.1.6.L93.B0"',
+    'video/mp4; codecs="hev1.1.6.L93.B0"',
+    'video/mp4; codecs="vp09.00.10.08"',
+    'video/webm; codecs="vp9"',
+    'audio/mp4; codecs="mp4a.40.2"',
+    'audio/webm; codecs="opus"'
+  ];
+
+  const result = {
+    navegador: navigator.userAgent,
+    contextoSeguro: window.isSecureContext,
+    APIs: {
+      MediaSource: typeof MediaSource === "function",
+      MSE: !!(window.MediaSource &&
+        typeof MediaSource.isTypeSupported === "function"),
+      EME: typeof navigator.requestMediaKeySystemAccess === "function",
+      MediaKeys: typeof window.MediaKeys === "function"
+    },
+    codecsMSE: {},
+    codecsVideo: {},
+    DRM: {}
+  };
+
+  for (const type of types) {
+    result.codecsMSE[type] =
+      window.MediaSource &&
+      typeof MediaSource.isTypeSupported === "function"
+        ? MediaSource.isTypeSupported(type)
+        : "API indisponível";
+
+    result.codecsVideo[type] = canPlay(type);
+  }
+
+  result.DRM.PlayReady =
+    await testDRM("com.microsoft.playready");
+
+  result.DRM.PlayReadyRecommendation =
+    await testDRM("com.microsoft.playready.recommendation");
+
+  result.DRM.Widevine =
+    await testDRM("com.widevine.alpha");
+
+  out.textContent = JSON.stringify(result, null, 2);
+};
+</script>
+
+</body>
+</html>
