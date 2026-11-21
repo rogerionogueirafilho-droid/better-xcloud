@@ -1,0 +1,33 @@
+
+<?xml version="1.0" encoding="UTF-8"?>
+<widget xmlns="http://www.w3.org/ns/widgets"
+        xmlns:tizen="http://tizen.org/ns/widgets"
+        id="http://better-xcloud.github.io/tizen"
+        version="0.1.0"
+        viewmodes="maximized">
+
+    <tizen:application
+        id="bxcloudtu8.BetterXCloud"
+        package="bxcloudtu8"
+        required_version="2.3"/>
+
+    <content src="index.html"/>
+
+    <name>Better xCloud</name>
+
+    <description>
+        Protótipo experimental do Better xCloud para Samsung Tizen TV.
+    </description>
+
+    <access origin="*" subdomains="true"/>
+
+    <tizen:profile name="tv-samsung"/>
+
+    <tizen:setting
+        screen-orientation="landscape"
+        context-menu="disable"
+        background-support="disable"
+        encryption="disable"
+        install-location="auto"/>
+
+</widget>
