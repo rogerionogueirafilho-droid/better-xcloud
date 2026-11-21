@@ -1,0 +1,183 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PlayReady PSSH - TU8000</title>
+<style>
+body {
+  background: #101820;
+  color: white;
+  font: 16px Arial;
+  padding: 20px;
+  line-height: 1.5;
+}
+button {
+  padding: 14px;
+  font-size: 16px;
+}
+pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  background: #1d2b36;
+  padding: 14px;
+  border-radius: 8px;
+}
+</style>
+</head>
+<body>
+<h2>PlayReady - PSSH válido</h2>
+<p>Diagnóstico da Samsung TU8000 / Tizen 5.5.</p>
+<p>Usa dados sintéticos. Não solicita nem envia licença.</p>
+<button id="run">Executar teste</button>
+<pre id="out">Aguardando...</pre>
+
+<script>
+const out = document.getElementById("out");
+
+function makePssh() {
+  const kid = new Uint8Array(16);
+  const kidBase64 = btoa(
+    String.fromCharCode(...kid)
+  );
+
+  const xml =
+    '<WRMHEADER version="4.0.0.0">' +
+    '<DATA>' +
+    '<PROTECTINFO>' +
+    '<KIDS>' +
+    '<KID ALGID="AESCTR" VALUE="' +
+    kidBase64 +
+    '"/>' +
+    '</KIDS>' +
+    '</PROTECTINFO>' +
+    '</DATA>' +
+    '</WRMHEADER>';
+
+  const xmlBytes = new Uint8Array(xml.length * 2);
+
+  for (let i = 0; i < xml.length; i++) {
+    xmlBytes[i * 2] = xml.charCodeAt(i) & 255;
+    xmlBytes[i * 2 + 1] =
+      (xml.charCodeAt(i) >> 8) & 255;
+  }
+
+  const proLength = 10 + xmlBytes.length;
+  const pro = new Uint8Array(proLength);
+  const proView = new DataView(pro.buffer);
+
+  proView.setUint32(0, proLength, true);
+  proView.setUint16(4, 1, true);
+  proView.setUint16(6, 1, true);
+  proView.setUint16(8, xmlBytes.length, true);
+  pro.set(xmlBytes, 10);
+
+  const pssh = new Uint8Array(32 + pro.length);
+  const view = new DataView(pssh.buffer);
+
+  view.setUint32(0, pssh.length, false);
+
+  pssh.set([0x70, 0x73, 0x73, 0x68], 4);
+  pssh.set([0, 0, 0, 0], 8);
+
+  pssh.set([
+    0x9a, 0x04, 0xf0, 0x79,
+    0x98, 0x40, 0x42, 0x86,
+    0xab, 0x92, 0xe6, 0x5b,
+    0xe0, 0x88, 0x5f, 0x95
+  ], 12);
+
+  view.setUint32(28, pro.length, false);
+  pssh.set(pro, 32);
+
+  return pssh;
+}
+
+document.getElementById("run").onclick = async () => {
+  const result = {
+    navegador: navigator.userAgent,
+    etapas: {},
+    observacoes: [
+      "PSSH e KID sintéticos.",
+      "Nenhuma licença é solicitada ou enviada."
+    ]
+  };
+
+  try {
+    const access =
+      await navigator.requestMediaKeySystemAccess(
+        "com.microsoft.playready",
+        [{
+          initDataTypes: ["cenc"],
+          distinctiveIdentifier: "not-allowed",
+          persistentState: "not-allowed",
+          sessionTypes: ["temporary"],
+          videoCapabilities: [{
+            contentType: 'video/mp4; codecs="avc1.42E01E"'
+          }],
+          audioCapabilities: [{
+            contentType: 'audio/mp4; codecs="mp4a.40.2"'
+          }]
+        }]
+      );
+
+    result.etapas.acessoPlayReady = "SUCESSO";
+
+    const keys = await access.createMediaKeys();
+    result.etapas.criacaoMediaKeys = "SUCESSO";
+
+    const video = document.createElement("video");
+    await video.setMediaKeys(keys);
+    result.etapas.conexaoComVideo = "SUCESSO";
+
+    const session = keys.createSession("temporary");
+    result.etapas.criacaoSessao = "SUCESSO";
+
+    const pssh = makePssh();
+
+    result.dadosPssh = {
+      tamanhoBytes: pssh.length,
+      estrutura: "PSSH + PlayReady PRO + WRMHEADER"
+    };
+
+    let messageReceived = false;
+
+    session.addEventListener("message", event => {
+      messageReceived = true;
+      result.etapas.eventoMessage = "RECEBIDO";
+      result.tipoMensagem = event.messageType;
+      result.tamanhoMensagem = event.message.byteLength;
+      out.textContent = JSON.stringify(result, null, 2);
+    });
+
+    session.addEventListener("keystatuseschange", () => {
+      result.etapas.eventoKeyStatusesChange = "RECEBIDO";
+      out.textContent = JSON.stringify(result, null, 2);
+    });
+
+    await session.generateRequest("cenc", pssh);
+
+    result.etapas.generateRequest = "SUCESSO";
+
+    await new Promise(resolve => setTimeout(resolve, 5000));
+
+    if (!messageReceived) {
+      result.etapas.eventoMessage =
+        "NÃO RECEBIDO EM 5 SEGUNDOS";
+    }
+
+    result.etapas.fechamentoSessao = "NÃO TESTADO";
+  } catch (e) {
+    result.erro = {
+      nome: e.name,
+      mensagem: e.message
+    };
+  }
+
+  result.contextoSeguro = window.isSecureContext;
+  out.textContent = JSON.stringify(result, null, 2);
+};
+</script>
+</body>
+</html>
