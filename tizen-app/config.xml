@@ -14,10 +14,9 @@
     <content src="index.html"/>
 
     <name>Better xCloud</name>
+    <description>Protótipo experimental do Better xCloud para Samsung Tizen TV.</description>
 
-    <description>
-        Protótipo experimental do Better xCloud para Samsung Tizen TV.
-    </description>
+    <tizen:privilege name="http://tizen.org/privilege/internet"/>
 
     <access origin="*" subdomains="true"/>
 
