@@ -43,18 +43,16 @@ function makePssh() {
   );
 
   const xml =
-    '<WRMHEADER version="4.0.0.0">' +
+    '<WRMHEADER xmlns="http://schemas.microsoft.com/DRM/2007/03/PlayReadyHeader" version="4.1.0.0">' +
     '<DATA>' +
     '<PROTECTINFO>' +
-    '<KIDS>' +
     '<KID ALGID="AESCTR" VALUE="' +
     kidBase64 +
-    '"/>' +
-    '</KIDS>' +
+    '"></KID>' +
     '</PROTECTINFO>' +
     '</DATA>' +
     '</WRMHEADER>';
-
+  
   const xmlBytes = new Uint8Array(xml.length * 2);
 
   for (let i = 0; i < xml.length; i++) {
