@@ -1,0 +1,89 @@
+
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Teste Client Hints - Samsung TU8000</title>
+<style>
+body {
+  font: 16px Arial, sans-serif;
+  background: #101820;
+  color: #f2f5f7;
+  padding: 20px;
+  line-height: 1.45;
+}
+h1 { font-size: 22px; }
+pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  background: #1d2b36;
+  padding: 14px;
+  border-radius: 8px;
+}
+button {
+  font-size: 16px;
+  padding: 12px 16px;
+  margin: 8px 0;
+}
+</style>
+</head>
+<body>
+
+<h1>Diagnóstico User-Agent Client Hints</h1>
+
+<p>Este teste consulta as informações que o navegador da TV disponibiliza ao JavaScript. Não altera configurações da TV.</p>
+
+<button id="run">Executar teste</button>
+
+<pre id="out">Aguardando…</pre>
+
+<script>
+const out = document.getElementById('out');
+
+document.getElementById('run').addEventListener('click', async () => {
+  const uaData = navigator.userAgentData;
+
+  const result = {
+    userAgent: navigator.userAgent,
+    clientHintsDisponivel: typeof uaData !== 'undefined',
+    getHighEntropyValuesDisponivel:
+      !!(uaData && typeof uaData.getHighEntropyValues === 'function')
+  };
+
+  if (uaData) {
+    result.brands = uaData.brands || null;
+    result.mobile =
+      typeof uaData.mobile === 'boolean' ? uaData.mobile : null;
+    result.platform = uaData.platform || null;
+
+    if (typeof uaData.getHighEntropyValues === 'function') {
+      try {
+        result.dadosAvancados =
+          await uaData.getHighEntropyValues([
+            'architecture',
+            'bitness',
+            'model',
+            'platformVersion',
+            'uaFullVersion',
+            'fullVersionList',
+            'wow64'
+          ]);
+      } catch (e) {
+        result.erroDadosAvancados = String(e);
+      }
+    }
+  }
+
+  result.descritorUserAgent =
+    Object.getOwnPropertyDescriptor(
+      Navigator.prototype,
+      'userAgent'
+    ) || null;
+
+  out.textContent = JSON.stringify(result, null, 2);
+});
+</script>
+
+</body>
+</html>
