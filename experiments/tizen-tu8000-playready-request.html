@@ -1,0 +1,138 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PlayReady Request - TU8000</title>
+<style>
+body {
+  background: #101820;
+  color: white;
+  font: 16px Arial;
+  padding: 20px;
+  line-height: 1.5;
+}
+button {
+  padding: 14px;
+  font-size: 16px;
+}
+pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  background: #1d2b36;
+  padding: 14px;
+  border-radius: 8px;
+}
+</style>
+</head>
+<body>
+<h2>Teste de solicitação PlayReady</h2>
+<p>Samsung TU8000 - Tizen 5.5</p>
+<p>Este teste usa dados sintéticos. Não solicita licença real.</p>
+<button id="run">Executar teste</button>
+<pre id="out">Aguardando...</pre>
+
+<script>
+const out = document.getElementById("out");
+
+document.getElementById("run").onclick = async () => {
+  const result = {
+    navegador: navigator.userAgent,
+    etapas: {},
+    observacoes: []
+  };
+
+  try {
+    const access =
+      await navigator.requestMediaKeySystemAccess(
+        "com.microsoft.playready",
+        [{
+          initDataTypes: ["cenc"],
+          distinctiveIdentifier: "not-allowed",
+          persistentState: "not-allowed",
+          sessionTypes: ["temporary"],
+          videoCapabilities: [{
+            contentType: 'video/mp4; codecs="avc1.42E01E"'
+          }],
+          audioCapabilities: [{
+            contentType: 'audio/mp4; codecs="mp4a.40.2"'
+          }]
+        }]
+      );
+
+    result.etapas.acessoPlayReady = "SUCESSO";
+
+    const keys = await access.createMediaKeys();
+    result.etapas.criacaoMediaKeys = "SUCESSO";
+
+    const video = document.createElement("video");
+    await video.setMediaKeys(keys);
+    result.etapas.conexaoComVideo = "SUCESSO";
+
+    const session = keys.createSession("temporary");
+    result.etapas.criacaoSessao = "SUCESSO";
+
+    result.metodosSessao = {
+      generateRequest: typeof session.generateRequest,
+      close: typeof session.close,
+      update: typeof session.update,
+      load: typeof session.load
+    };
+
+    let messageReceived = false;
+
+    session.addEventListener("message", event => {
+      messageReceived = true;
+      result.etapas.eventoMessage = "RECEBIDO";
+      result.tipoMensagem = event.messageType;
+      result.tamanhoMensagem = event.message.byteLength;
+      out.textContent = JSON.stringify(result, null, 2);
+    });
+
+    session.addEventListener("keystatuseschange", () => {
+      result.etapas.eventoKeyStatusesChange = "RECEBIDO";
+      out.textContent = JSON.stringify(result, null, 2);
+    });
+
+    // PSSH sintético PlayReady, sem dados de licença.
+    const pssh = new Uint8Array([
+      0x00,0x00,0x00,0x20,
+      0x70,0x73,0x73,0x68,
+      0x00,0x00,0x00,0x00,
+      0x9a,0x04,0xf0,0x79,
+      0x98,0x40,0x42,0x86,
+      0xab,0x92,0xe6,0x5b,
+      0xe0,0x88,0x5f,0x95,
+      0x00,0x00,0x00,0x00
+    ]);
+
+    await session.generateRequest("cenc", pssh);
+    result.etapas.generateRequest = "SUCESSO";
+
+    if (!messageReceived) {
+      await new Promise(resolve => setTimeout(resolve, 5000));
+    }
+
+    if (!messageReceived) {
+      result.etapas.eventoMessage = "NÃO RECEBIDO EM 5 SEGUNDOS";
+    }
+
+    result.etapas.sessaoFechada = "NÃO TESTADO";
+    result.observacoes.push(
+      "Nenhuma licença foi solicitada ou enviada."
+    );
+
+  } catch (e) {
+    result.erro = {
+      nome: e.name,
+      mensagem: e.message
+    };
+  }
+
+  result.contextoSeguro = window.isSecureContext;
+  out.textContent = JSON.stringify(result, null, 2);
+};
+</script>
+</body>
+</html>
