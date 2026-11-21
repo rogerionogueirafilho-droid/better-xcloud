@@ -1,0 +1,87 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AVPlay - Samsung TU8000</title>
+<style>
+body {
+  background: #101820;
+  color: white;
+  font: 16px Arial;
+  padding: 20px;
+  line-height: 1.5;
+}
+button {
+  padding: 14px;
+  font-size: 16px;
+}
+pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  background: #1d2b36;
+  padding: 14px;
+  border-radius: 8px;
+}
+</style>
+</head>
+<body>
+<h2>Diagnóstico AVPlay - TU8000</h2>
+<p>Verificação de APIs Samsung disponíveis no navegador.</p>
+<button id="run">Executar teste</button>
+<pre id="out">Aguardando...</pre>
+
+<script>
+document.getElementById("run").onclick = () => {
+  const av = window.webapis && window.webapis.avplay;
+
+  const result = {
+    navegador: navigator.userAgent,
+    contextoSeguro: window.isSecureContext,
+    webapis: typeof window.webapis,
+    avplay: typeof av,
+    metodos: {},
+    tizen: typeof window.tizen,
+    objetoAvplayer: {},
+    observacao:
+      "Teste de disponibilidade. Nenhuma mídia é aberta ou reproduzida."
+  };
+
+  if (av) {
+    [
+      "open",
+      "close",
+      "prepare",
+      "prepareAsync",
+      "play",
+      "stop",
+      "getState",
+      "setDrm",
+      "setListener"
+    ].forEach(name => {
+      result.metodos[name] = typeof av[name];
+    });
+  }
+
+  try {
+    const obj = document.createElement("object");
+    obj.type = "application/avplayer";
+    result.objetoAvplayer = {
+      criado: true,
+      tipo: obj.type,
+      reconhecido:
+        obj.type === "application/avplayer"
+    };
+  } catch (e) {
+    result.objetoAvplayer = {
+      erro: e.name + ": " + e.message
+    };
+  }
+
+  document.getElementById("out").textContent =
+    JSON.stringify(result, null, 2);
+};
+</script>
+</body>
+</html>
