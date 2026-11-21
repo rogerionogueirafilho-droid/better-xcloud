@@ -1,0 +1,86 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Better xCloud</title>
+
+    <script src="$WEBAPIS/webapis/webapis.js"></script>
+
+    <style>
+        body {
+            margin: 0;
+            padding: 50px;
+            background: #10131b;
+            color: white;
+            font-family: Arial, sans-serif;
+        }
+
+        h1 {
+            color: #79b8ff;
+            font-size: 38px;
+        }
+
+        p {
+            font-size: 23px;
+            line-height: 1.5;
+        }
+
+        button {
+            padding: 18px 30px;
+            font-size: 22px;
+            background: #107c10;
+            color: white;
+            border: 0;
+            border-radius: 8px;
+        }
+
+        #resultado {
+            margin-top: 25px;
+            white-space: pre-wrap;
+            font-size: 20px;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Better xCloud</h1>
+    <p>Protótipo experimental para Samsung Tizen TV.</p>
+    <p>Diagnóstico das APIs disponíveis no aplicativo.</p>
+
+    <button onclick="verificar()">Verificar novamente</button>
+
+    <div id="resultado">Verificando...</div>
+
+    <script>
+        function verificar() {
+            var resultado = document.getElementById("resultado");
+
+            var dados = {
+                webapis: typeof webapis,
+                avplay: typeof webapis !== "undefined"
+                    ? typeof webapis.avplay : "indisponível",
+                tizen: typeof tizen,
+                metodosAVPlay: []
+            };
+
+            try {
+                if (typeof webapis !== "undefined" &&
+                    webapis.avplay) {
+                    dados.metodosAVPlay =
+                        Object.keys(webapis.avplay);
+                }
+            } catch (e) {
+                dados.erro = e.message;
+            }
+
+            resultado.textContent =
+                JSON.stringify(dados, null, 2);
+        }
+
+        window.onload = verificar;
+    </script>
+</body>
+</html>
