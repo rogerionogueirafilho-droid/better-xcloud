@@ -1,0 +1,98 @@
+
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Teste PlayReady - TU8000</title>
+<style>
+body {
+  font: 16px Arial;
+  background: #101820;
+  color: white;
+  padding: 20px;
+  line-height: 1.5;
+}
+pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  background: #1d2b36;
+  padding: 14px;
+  border-radius: 8px;
+}
+button {
+  padding: 12px 18px;
+  font-size: 16px;
+}
+</style>
+</head>
+<body>
+<h2>Teste de sessão PlayReady</h2>
+<p>Diagnóstico da Samsung TU8000.</p>
+<p>Não solicita licença DRM nem acessa sua conta Xbox.</p>
+<button id="run">Executar teste</button>
+<pre id="out">Aguardando...</pre>
+
+<script>
+const out = document.getElementById("out");
+
+document.getElementById("run").onclick = async () => {
+  const result = {
+    navegador: navigator.userAgent,
+    etapas: {}
+  };
+
+  let mediaKeys = null;
+  let session = null;
+  const video = document.createElement("video");
+
+  try {
+    if (!navigator.requestMediaKeySystemAccess) {
+      throw new Error("API EME indisponível");
+    }
+
+    const access =
+      await navigator.requestMediaKeySystemAccess(
+        "com.microsoft.playready",
+        [{
+          initDataTypes: ["cenc"],
+          distinctiveIdentifier: "not-allowed",
+          persistentState: "not-allowed",
+          sessionTypes: ["temporary"],
+          videoCapabilities: [{
+            contentType: 'video/mp4; codecs="avc1.42E01E"'
+          }],
+          audioCapabilities: [{
+            contentType: 'audio/mp4; codecs="mp4a.40.2"'
+          }]
+        }]
+      );
+
+    result.etapas.acessoPlayReady = "SUCESSO";
+
+    mediaKeys = await access.createMediaKeys();
+    result.etapas.criacaoMediaKeys = "SUCESSO";
+
+    await video.setMediaKeys(mediaKeys);
+    result.etapas.conexaoComVideo = "SUCESSO";
+
+    session = mediaKeys.createSession("temporary");
+    result.etapas.criacaoSessao = "SUCESSO";
+
+    await session.close();
+    result.etapas.fechamentoSessao = "SUCESSO";
+
+  } catch (e) {
+    result.erro = {
+      nome: e.name,
+      mensagem: e.message
+    };
+  }
+
+  result.contextoSeguro = window.isSecureContext;
+
+  out.textContent = JSON.stringify(result, null, 2);
+};
+</script>
+</body>
+</html>
