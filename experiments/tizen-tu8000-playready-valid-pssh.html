@@ -37,10 +37,7 @@ pre {
 const out = document.getElementById("out");
 
 function makePssh() {
-  const kid = new Uint8Array(16);
-  const kidBase64 = btoa(
-    String.fromCharCode(...kid)
-  );
+  const kidBase64 = "PV1LM/VEVk+kEOB8qqcWDg==";
 
   const xml =
     '<WRMHEADER xmlns="http://schemas.microsoft.com/DRM/2007/03/PlayReadyHeader" version="4.1.0.0">' +
