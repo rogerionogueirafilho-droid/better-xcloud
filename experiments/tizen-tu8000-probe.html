@@ -1,0 +1,96 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Teste Samsung TU8000</title>
+<style>
+body {
+  background: #101318;
+  color: white;
+  font: 16px Arial;
+  padding: 20px;
+}
+h2 { color: #70b7ff; }
+.item {
+  background: #202936;
+  padding: 12px;
+  margin: 8px 0;
+  border-radius: 8px;
+}
+.ok { color: #65e69a; }
+.no { color: #ff7777; }
+button {
+  padding: 12px;
+  margin: 8px 0;
+  background: #16834b;
+  color: white;
+  border: 0;
+  border-radius: 8px;
+}
+</style>
+</head>
+<body>
+
+<h2>Diagnóstico Samsung TU8000</h2>
+<p>Teste de compatibilidade do navegador da TV.</p>
+
+<div id="browser" class="item"></div>
+<div id="results"></div>
+
+<button onclick="runTests()">Testar novamente</button>
+
+<script>
+function runTests() {
+  var tests = [
+    ["Web Worker", typeof Worker === "function"],
+    ["WebAssembly", typeof WebAssembly === "object"],
+    ["Fetch API", typeof fetch === "function"],
+    ["Promise.allSettled", typeof Promise.allSettled === "function"],
+    ["WebSocket", typeof WebSocket === "function"],
+    ["WebRTC", typeof RTCPeerConnection === "function"],
+    ["Media Source Extensions", typeof MediaSource === "function"],
+    ["WebGL", !!document.createElement("canvas").getContext("webgl")],
+    ["WebGL 2", !!document.createElement("canvas").getContext("webgl2")],
+    ["WebGPU", !!navigator.gpu],
+    ["VideoDecoder", typeof VideoDecoder === "function"],
+    ["OffscreenCanvas", typeof OffscreenCanvas === "function"],
+    ["Gamepad API", typeof navigator.getGamepads === "function"],
+    ["Pointer Events", typeof PointerEvent === "function"]
+  ];
+
+  var worker = false;
+  try {
+    var blob = new Blob(["postMessage('OK')"], {
+      type: "text/javascript"
+    });
+    var url = URL.createObjectURL(blob);
+    var w = new Worker(url);
+    worker = true;
+    w.terminate();
+    URL.revokeObjectURL(url);
+  } catch(e) {}
+
+  tests.push(["Web Worker via Blob", worker]);
+
+  document.getElementById("browser").textContent =
+    "Navegador: " + navigator.userAgent;
+
+  var output = "";
+  tests.forEach(function(test) {
+    output += '<div class="item">' +
+      test[0] + ': <strong class="' +
+      (test[1] ? "ok" : "no") + '">' +
+      (test[1] ? "DISPONÍVEL" : "AUSENTE") +
+      '</strong></div>';
+  });
+
+  document.getElementById("results").innerHTML = output;
+}
+
+runTests();
+</script>
+
+</body>
+</html>
