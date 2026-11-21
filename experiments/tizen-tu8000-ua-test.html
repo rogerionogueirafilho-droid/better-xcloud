@@ -1,0 +1,79 @@
+ <!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Teste UA - TU8000</title>
+<style>
+body {
+  background: #101318;
+  color: white;
+  font: 16px Arial;
+  padding: 20px;
+}
+.item {
+  background: #202936;
+  padding: 12px;
+  margin: 8px 0;
+  border-radius: 8px;
+  overflow-wrap: anywhere;
+}
+.ok { color: #65e69a; }
+.no { color: #ff7777; }
+</style>
+</head>
+<body>
+<h2>Teste de identificação da TU8000</h2>
+<div id="original" class="item"></div>
+<div id="result"></div>
+
+<script>
+var original = navigator.userAgent;
+var teste = "Mozilla/5.0 (SMART-TV; Linux; Tizen 5.5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
+
+document.getElementById("original").textContent =
+  "User Agent original: " + original;
+
+var resultado = document.getElementById("result");
+
+function mostrar(nome, valor, classe) {
+  var div = document.createElement("div");
+  div.className = "item";
+  div.innerHTML = nome + ": <strong class='" + classe + "'>" + valor + "</strong>";
+  resultado.appendChild(div);
+}
+
+try {
+  Object.defineProperty(navigator, "userAgent", {
+    configurable: true,
+    get: function() {
+      return teste;
+    }
+  });
+
+  mostrar(
+    "Alteração temporária",
+    navigator.userAgent === teste ? "ACEITA" : "NÃO ACEITA",
+    navigator.userAgent === teste ? "ok" : "no"
+  );
+
+} catch (erro) {
+  mostrar("Alteração temporária", "BLOQUEADA: " + erro.message, "no");
+}
+
+delete navigator.userAgent;
+
+mostrar(
+  "Restauração",
+  navigator.userAgent === original ? "OK" : "VERIFICAR",
+  navigator.userAgent === original ? "ok" : "no"
+);
+
+mostrar(
+  "User-Agent Client Hints",
+  typeof navigator.userAgentData === "undefined" ? "AUSENTE" : "DISPONÍVEL",
+  "ok"
+);
+</script>
+</body>
+</html>
