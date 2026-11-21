@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html>
 <head>
@@ -11,7 +10,7 @@
     <style>
         body {
             margin: 0;
-            padding: 50px;
+            padding: 35px;
             background: #10131b;
             color: white;
             font-family: Arial, sans-serif;
@@ -23,12 +22,14 @@
         }
 
         p {
-            font-size: 23px;
+            font-size: 22px;
             line-height: 1.5;
         }
 
         button {
-            padding: 18px 30px;
+            display: block;
+            margin: 15px 0;
+            padding: 18px 25px;
             font-size: 22px;
             background: #107c10;
             color: white;
@@ -39,8 +40,9 @@
         #resultado {
             margin-top: 25px;
             white-space: pre-wrap;
-            font-size: 20px;
-            line-height: 1.6;
+            overflow-wrap: anywhere;
+            font-size: 18px;
+            line-height: 1.5;
         }
     </style>
 </head>
@@ -48,80 +50,138 @@
 <body>
     <h1>Better xCloud</h1>
     <p>Protótipo experimental para Samsung Tizen TV.</p>
-    <p>Diagnóstico das APIs disponíveis no aplicativo.</p>
 
-    <button onclick="verificar()">Verificar novamente</button>
+    <button onclick="verificar()">Verificar APIs</button>
+    <button onclick="testarWebSetting()">Testar WebSetting</button>
+    <button onclick="abrirXbox()">Abrir Xbox Cloud</button>
 
-    <div id="resultado">Verificando...</div>
+    <div id="resultado">Iniciando diagnóstico...</div>
 
     <script>
-function verificar() {
-    var saida = document.getElementById("resultado");
+        function verificar() {
+            var saida = document.getElementById("resultado");
 
-    var nomes = [
-        "open", "close", "prepare", "prepareAsync",
-        "setDisplayRect", "getVideoSize", "getCodecInfo",
-        "play", "pause", "stop", "getState",
-        "seekTo", "getDuration", "getCurrentTime",
-        "setListener", "setDrm", "getUID",
-        "setStreamingProperty", "getStreamingProperty",
-        "getVersion", "setDisplayMethod", "setSelectTrack",
-        "getCurrentStreamInfo", "getTotalTrackInfo"
-    ];
+            var nomes = [
+                "open", "close", "prepare", "prepareAsync",
+                "setDisplayRect", "getVideoSize", "getCodecInfo",
+                "play", "pause", "stop", "getState",
+                "seekTo", "getDuration", "getCurrentTime",
+                "setListener", "setDrm", "getUID",
+                "setStreamingProperty", "getStreamingProperty",
+                "getVersion", "setDisplayMethod", "setSelectTrack",
+                "getCurrentStreamingInfo", "getTotalTrackInfo"
+            ];
 
-    var dados = {
-        webapis: typeof window.webapis,
-        avplay: "indisponível",
-        tizen: typeof window.tizen,
-        metodosAVPlay: {},
-        metodosDisponiveis: [],
-        metodosIndisponiveis: [],
-        testeGetState: "não executado",
-        versaoAVPlay: "não consultada"
-    };
+            var dados = {
+                webapis: typeof window.webapis,
+                avplay: "indisponível",
+                tizen: typeof window.tizen,
+                websetting: "indisponível",
+                setUserAgentString: "indisponível",
+                metodosAVPlay: {},
+                metodosDisponiveis: [],
+                metodosIndisponiveis: [],
+                testeGetState: "não executado",
+                versaoAVPlay: "não consultada"
+            };
 
-    try {
-        if (window.webapis && window.webapis.avplay) {
-            var av = window.webapis.avplay;
-            dados.avplay = typeof av;
-
-            for (var i = 0; i < nomes.length; i++) {
-                var nome = nomes[i];
-                var tipo = typeof av[nome];
-
-                dados.metodosAVPlay[nome] = tipo;
-
-                if (tipo === "function") {
-                    dados.metodosDisponiveis.push(nome);
-                } else {
-                    dados.metodosIndisponiveis.push(nome);
+            try {
+                if (window.tizen && window.tizen.websetting) {
+                    dados.websetting = typeof window.tizen.websetting;
+                    dados.setUserAgentString =
+                        typeof window.tizen.websetting.setUserAgentString;
                 }
+
+                if (window.webapis && window.webapis.avplay) {
+                    var av = window.webapis.avplay;
+                    dados.avplay = typeof av;
+
+                    for (var i = 0; i < nomes.length; i++) {
+                        var nome = nomes[i];
+                        var tipo = typeof av[nome];
+
+                        dados.metodosAVPlay[nome] = tipo;
+
+                        if (tipo === "function") {
+                            dados.metodosDisponiveis.push(nome);
+                        } else {
+                            dados.metodosIndisponiveis.push(nome);
+                        }
+                    }
+
+                    if (typeof av.getState === "function") {
+                        try {
+                            dados.testeGetState = av.getState();
+                        } catch (e) {
+                            dados.testeGetState =
+                                "ERRO: " + e.name + " " + e.message;
+                        }
+                    }
+
+                    if (typeof av.getVersion === "function") {
+                        try {
+                            dados.versaoAVPlay = av.getVersion();
+                        } catch (e) {
+                            dados.versaoAVPlay =
+                                "ERRO: " + e.name + " " + e.message;
+                        }
+                    }
+                }
+            } catch (e) {
+                dados.erroGeral = e.name + " " + e.message;
             }
 
-            if (typeof av.getState === "function") {
-                try {
-                    dados.testeGetState = av.getState();
-                } catch (e) {
-                    dados.testeGetState = "ERRO: " + e.name + " " + e.message;
-                }
-            }
+            dados.userAgent = navigator.userAgent;
+            saida.textContent = JSON.stringify(dados, null, 2);
+        }
 
-            if (typeof av.getVersion === "function") {
-                try {
-                    dados.versaoAVPlay = av.getVersion();
-                } catch (e) {
-                    dados.versaoAVPlay = "ERRO: " + e.name + " " + e.message;
+        function testarWebSetting() {
+            var saida = document.getElementById("resultado");
+
+            var dados = {
+                userAgentAtual: navigator.userAgent,
+                tizen: typeof window.tizen,
+                websetting: window.tizen && window.tizen.websetting
+                    ? typeof window.tizen.websetting
+                    : "indisponível",
+                setUserAgentString: window.tizen && window.tizen.websetting
+                    ? typeof window.tizen.websetting.setUserAgentString
+                    : "indisponível"
+            };
+
+            try {
+                if (!window.tizen || !window.tizen.websetting ||
+                    typeof window.tizen.websetting.setUserAgentString !== "function") {
+                    dados.resultadoTeste = "API não disponível";
+                    saida.textContent = JSON.stringify(dados, null, 2);
+                    return;
                 }
+
+                window.tizen.websetting.setUserAgentString(
+                    navigator.userAgent,
+                    function () {
+                        dados.resultadoTeste = "SUCESSO";
+                        dados.userAgentAposTeste = navigator.userAgent;
+                        saida.textContent = JSON.stringify(dados, null, 2);
+                    },
+                    function (erro) {
+                        dados.resultadoTeste =
+                            "ERRO: " + erro.name + " - " + erro.message;
+                        saida.textContent = JSON.stringify(dados, null, 2);
+                    }
+                );
+            } catch (erro) {
+                dados.resultadoTeste =
+                    "EXCEÇÃO: " + erro.name + " - " + erro.message;
+                saida.textContent = JSON.stringify(dados, null, 2);
             }
         }
-    } catch (e) {
-        dados.erroGeral = e.name + " " + e.message;
-    }
 
-    saida.textContent = JSON.stringify(dados, null, 2);
-}
+        function abrirXbox() {
+            window.location.href = "https://www.xbox.com/play";
+        }
 
-window.onload = verificar;
-</script>
+        window.onload = verificar;
+    </script>
 </body>
 </html>
