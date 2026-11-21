@@ -55,32 +55,73 @@
     <div id="resultado">Verificando...</div>
 
     <script>
-        function verificar() {
-            var resultado = document.getElementById("resultado");
+        
+<script>
+function verificar() {
+    var saida = document.getElementById("resultado");
 
-            var dados = {
-                webapis: typeof webapis,
-                avplay: typeof webapis !== "undefined"
-                    ? typeof webapis.avplay : "indisponível",
-                tizen: typeof tizen,
-                metodosAVPlay: []
-            };
+    var nomes = [
+        "open", "close", "prepare", "prepareAsync",
+        "setDisplayRect", "getVideoSize", "getCodecInfo",
+        "play", "pause", "stop", "getState",
+        "seekTo", "getDuration", "getCurrentTime",
+        "setListener", "setDrm", "getUID",
+        "setStreamingProperty", "getStreamingProperty",
+        "getVersion", "setDisplayMethod", "setSelectTrack",
+        "getCurrentStreamInfo", "getTotalTrackInfo"
+    ];
 
-            try {
-                if (typeof webapis !== "undefined" &&
-                    webapis.avplay) {
-                    dados.metodosAVPlay =
-                        Object.keys(webapis.avplay);
+    var dados = {
+        webapis: typeof window.webapis,
+        avplay: "indisponível",
+        tizen: typeof window.tizen,
+        metodosAVPlay: {},
+        metodosDisponiveis: [],
+        metodosIndisponiveis: [],
+        testeGetState: "não executado",
+        versaoAVPlay: "não consultada"
+    };
+
+    try {
+        if (window.webapis && window.webapis.avplay) {
+            var av = window.webapis.avplay;
+            dados.avplay = typeof av;
+
+            for (var i = 0; i < nomes.length; i++) {
+                var nome = nomes[i];
+                var tipo = typeof av[nome];
+
+                dados.metodosAVPlay[nome] = tipo;
+
+                if (tipo === "function") {
+                    dados.metodosDisponiveis.push(nome);
+                } else {
+                    dados.metodosIndisponiveis.push(nome);
                 }
-            } catch (e) {
-                dados.erro = e.message;
             }
 
-            resultado.textContent =
-                JSON.stringify(dados, null, 2);
-        }
+            if (typeof av.getState === "function") {
+                try {
+                    dados.testeGetState = av.getState();
+                } catch (e) {
+                    dados.testeGetState = "ERRO: " + e.name + " " + e.message;
+                }
+            }
 
-        window.onload = verificar;
-    </script>
-</body>
-</html>
+            if (typeof av.getVersion === "function") {
+                try {
+                    dados.versaoAVPlay = av.getVersion();
+                } catch (e) {
+                    dados.versaoAVPlay = "ERRO: " + e.name + " " + e.message;
+                }
+            }
+        }
+    } catch (e) {
+        dados.erroGeral = e.name + " " + e.message;
+    }
+
+    saida.textContent = JSON.stringify(dados, null, 2);
+}
+
+window.onload = verificar;
+</script>
